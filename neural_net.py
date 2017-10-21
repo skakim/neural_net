@@ -98,9 +98,12 @@ class Neuron(object):
         if self.type == 'bias':
             return 1.0
         else:
+            if input_values == [] or input_values == ():
+                raise ValueError('Input for sigmoid and ReLu can\'t be empty')
+
             x = sum(input_values)
             if self.type == 'sigmoid':
-                return (1.0 / (1.0 + numpy.exp(-x)))
+                return 1.0 / (1.0 + numpy.exp(-x))
             elif self.type == 'ReLU':
                 return max(0.0,x)
 
