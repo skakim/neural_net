@@ -34,6 +34,17 @@ class TestNeuronMethods(unittest.TestCase):
         a_neuron = neural_net.Neuron('ReLU')
         self.assertEqual(a_neuron.activation([1]), fun(1))
         self.assertEqual(a_neuron.activation([1, 2, 3]), fun(6))
+        self.assertEqual(a_neuron.activation([-2]), 0)
+
+    def test_activation_Bias(self):
+
+        def fun(x):
+            return max(0.0, x)
+
+        a_neuron = neural_net.Neuron('bias')
+        self.assertEqual(a_neuron.activation([]), 1)
+        self.assertEqual(a_neuron.activation([1, 2, 3]), 1)
+        self.assertEqual(a_neuron.activation([-2]), 1)
 
     def test_activation_bias(self):
         pass
