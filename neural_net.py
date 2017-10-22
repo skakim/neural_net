@@ -120,4 +120,4 @@ class Neuron(object):
         WILL need input values (the weights, deltas and activation) (slide 56 aula 11)
         :return: the delta value (to calc the gradients to att the weights)
         """
-        return sum([weights[i] * deltas[i] for i in range(0, len(weights))]) * activation * (1 - activation)
+        return sum([w * d for w, d in zip(weights, deltas)]) * activation * (1 - activation)
