@@ -8,7 +8,7 @@ def random_weight():
     """
     #parameters of np.random.normal (suggested by Bruno to be small values close to 0.0)
     average = 0.0
-    stddev = 0.3
+    stddev = 0.15
 
     value = 0.0
     while (value == 0.0):  # not really beautiful, but works
