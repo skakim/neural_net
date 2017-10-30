@@ -1,5 +1,7 @@
 import numpy as np
 import itertools
+from copy import deepcopy
+from collections import OrderedDict
 
 
 def random_weight():
@@ -17,6 +19,7 @@ def random_weight():
 
 
 def generate_NN(input_size, output_size, hidden_layers_sizes, neurons_type='sigmoid'):
+    # TODO transform this in a private method of NeuralNet
     """
     :param input_size: int, size of an input
     :param output_size: int, size of an output
@@ -24,8 +27,8 @@ def generate_NN(input_size, output_size, hidden_layers_sizes, neurons_type='sigm
     :param neurons_type: 'bias', 'sigmoid' or 'ReLU'
     :return: neurons dict and connections dict
     """
-    neurons = {}
-    connections = {}
+    neurons = OrderedDict()
+    connections = OrderedDict()
     input_layer = [Neuron('bias')]
     input_layer += [Neuron(neurons_type) for _ in range(1, input_size + 1)]
     neurons[0] = input_layer
@@ -64,13 +67,29 @@ class NeuralNet(object):
         self.neurons, self.connections = generate_NN(input_size, output_size, hidden_layers_sizes, neurons_type)
         self.alpha = alpha
         self.regularization = regularization
+        self.input_size = input_size
+        self.hidden_layers_sizes = hidden_layers_sizes
+        self.neuron_type = neurons_type
 
-    def predict(self, input):  # TODO
+    def predict(self, nn_input: list):
         """
-        :param input: list of float, ONE input
+        :param nn_input: list of float, ONE input
         :return: float, the predicted value
         """
-        pass
+
+        if len(nn_input) != self.input_size:
+            raise ValueError
+
+        current_input = deepcopy(nn_input)
+
+        for layer, connections in zip(self.neurons, self.connections):
+            temp_input = []
+            for a_neuron in layer:
+                temp_input += a_neuron.activation([weight * activation for weight, activation in zip(connections, current_input)])
+
+            current_input = temp_input
+
+        return current_input
 
     def back_propagation(self, error):  # TODO
         """
@@ -89,8 +108,8 @@ class Neuron(object):
         """
         self.type = type.upper()
 
-    def activation(self,
-                   input_values=()):  # if BIAS neuron, won't have input_values (input_values = weights * activations)
+    def activation(self, input_values=()):
+        # if BIAS neuron, won't have input_values (input_values = weights * activations)
         """
         :param input_values: list of float, each value correspond to weight(i) * activation(i) (already calculated by the caller)
         :return: float, the activation output value
