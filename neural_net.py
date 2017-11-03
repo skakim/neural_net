@@ -18,36 +18,6 @@ def random_weight():
     return value
 
 
-def generate_NN(input_size, output_size, hidden_layers_sizes, neurons_type='sigmoid'):
-    # TODO transform this in a private method of NeuralNet
-    """
-    :param input_size: int, size of an input
-    :param output_size: int, size of an output
-    :param hidden_layers_sizes: list of int, size of each hidden layer
-    :param neurons_type: 'bias', 'sigmoid' or 'ReLU'
-    :return: neurons dict and connections dict
-    """
-    neurons = OrderedDict()
-    connections = OrderedDict()
-    input_layer = [Neuron('bias')]
-    input_layer += [Neuron(neurons_type) for _ in range(1, input_size + 1)]
-    neurons[0] = input_layer
-    layer_no = 1
-    for size in hidden_layers_sizes:
-        layer = [Neuron('bias')]
-        layer += [Neuron(neurons_type) for _ in range(1, size + 1)]
-        neurons[layer_no] = layer
-        connections[layer_no - 1] = {comb: random_weight() for comb in
-                                     itertools.product(range(len(neurons[layer_no - 1])), range(1, size + 1))}
-        layer_no += 1
-    output_layer = [Neuron(neurons_type) for _ in range(1, output_size + 1)]  # output layer doesn't have a bias neuron
-    neurons[layer_no] = output_layer
-    connections[layer_no - 1] = {comb: random_weight() for comb in
-                                 itertools.product(range(len(neurons[layer_no - 1])), range(1, output_size + 1))}
-
-    return neurons, connections
-
-
 class NeuralNet(object):
     """
     neuron(l,i) = neurons[l][i] [by definition, if i=0, it is a BIAS neuron]
@@ -64,7 +34,7 @@ class NeuralNet(object):
         :param alpha: float, alpha value
         :param regularization: bool, True if want to use Regularization, False if not
         """
-        self.neurons, self.connections = generate_NN(input_size, output_size, hidden_layers_sizes, neurons_type)
+        self.neurons, self.connections = self._generate_NN(input_size, output_size, hidden_layers_sizes, neurons_type)
         self.alpha = alpha
         self.regularization = regularization
         self.input_size = input_size
@@ -73,23 +43,26 @@ class NeuralNet(object):
 
     def predict(self, nn_input: list):
         """
-        :param nn_input: list of float, ONE input
-        :return: float, the predicted value
+        :param nn_input: list of float (EXCLUDING CONSTANT FEATURE)
+        :return: list of float, the predicted values
         """
 
         if len(nn_input) != self.input_size:
-            raise ValueError
+            raise ValueError("This neural network requires a list of %d elements, but %d were given" %
+                             (self.input_size, len(nn_input)))
 
-        current_input = deepcopy(nn_input)
+        activations = deepcopy(nn_input)
+        activations = [1] + activations
 
-        for layer, connections in zip(self.neurons, self.connections):
-            temp_input = []
-            for a_neuron in layer:
-                temp_input += a_neuron.activation([weight * activation for weight, activation in zip(connections, current_input)])
+        for layer_no, layer in enumerate(self.neurons):
+            new_activations = []
+            for neuron_no, neuron in enumerate(layer):
+                activation_input = [a * w for a, w in zip(activations, self.connections[layer_no][neuron_no])]
+                new_activations.append(neuron.activation(activation_input))
+            activations = new_activations
+            print(activations)
 
-            current_input = temp_input
-
-        return current_input
+        return activations
 
     def back_propagation(self, error):  # TODO
         """
@@ -98,6 +71,39 @@ class NeuralNet(object):
         probably will need to create smaller auxiliary function
         """
         pass
+
+    @staticmethod
+    def _generate_NN(input_size, output_size, hidden_layers_sizes, neurons_type='sigmoid'):
+        # TODO transform this in a private method of NeuralNet
+        """
+        :param input_size: int, size of an input
+        :param output_size: int, size of an output
+        :param hidden_layers_sizes: list of int, size of each hidden layer
+        :param neurons_type: 'bias', 'sigmoid' or 'ReLU'
+        :return: neurons dict and connections dict
+        """
+        neurons = []
+        connections =[]
+        input_layer = [Neuron('bias')]
+        input_layer += [Neuron(neurons_type) for _ in range(1, input_size + 1)]
+        neurons.append(input_layer)
+
+        for hidden_layer_size in hidden_layers_sizes:
+            hidden_layer = [Neuron('bias')]
+            hidden_layer += [Neuron(neurons_type) for _ in range(0, hidden_layer_size)]
+            neurons.append(hidden_layer)
+
+        neurons.append([Neuron(neurons_type) for _ in range(0, output_size)])
+
+        #Iterates all layers except first because it is the input layer.
+        for layer_no, layer in enumerate(neurons[1:], start=1):
+            neurons_connections = []
+            for _ in layer:
+                a_neuron_connection = [random_weight() for _ in neurons[layer_no-1]]
+                neurons_connections.append(a_neuron_connection)
+            connections.append(neurons_connections)
+
+        return neurons[1:], connections
 
 
 class Neuron(object):
