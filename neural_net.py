@@ -41,10 +41,10 @@ class NeuralNet(object):
         self.hidden_layers_sizes = hidden_layers_sizes
         self.neuron_type = neurons_type
 
-    def predict(self, nn_input: list):
+    def predict(self, nn_input: list) -> (list, list):
         """
         :param nn_input: list of float (EXCLUDING CONSTANT FEATURE)
-        :return: list of float, the predicted values
+        :return: list of float, the predicted values and all neuron activations
         """
 
         if len(nn_input) != self.input_size:
@@ -54,22 +54,39 @@ class NeuralNet(object):
         activations = deepcopy(nn_input)
         activations = [1] + activations
 
+        all_activations = []
+
         for layer_no, layer in enumerate(self.neurons):
             new_activations = []
             for neuron_no, neuron in enumerate(layer):
                 activation_input = [a * w for a, w in zip(activations, self.connections[layer_no][neuron_no])]
                 new_activations.append(neuron.activation(activation_input))
+            all_activations.append(new_activations)
             activations = new_activations
-            print(activations)
 
-        return activations
+        return activations, all_activations
 
-    def back_propagation(self, error):  # TODO
+    def back_propagation(self, nn_input: list, excpected_list: list):  # TODO
         """
-        :param error: the error of the NN, calculated outside
+        :list error: the error of the NN, calculated outside
         remember to use self.regularization to see if need to use regularization or not
         probably will need to create smaller auxiliary function
         """
+
+        prediction_list, activations = self.predict(nn_input)
+
+        all_deltas = []
+        current_deltas = [prediction - excpected for prediction, excpected in zip(prediction_list, excpected_list)]
+        all_deltas.append(current_deltas)
+
+        for layer_no, layer in reversed(list(enumerate(self.neurons))):
+            new_deltas = []
+            for neuron_no, neuron in layer:
+                delta = sum([d * w[neuron_no] for d, w in zip(current_deltas, self.connections[layer_no])])\
+                             * neuron.last_activation * (1 - neuron.last_activation)
+                new_deltas.append(delta)
+            all_deltas.append(new_deltas)
+            current_deltas = new_deltas
         pass
 
     @staticmethod
@@ -113,6 +130,7 @@ class Neuron(object):
         (no need to calc delta for bias neurons)
         """
         self.type = type.upper()
+        self.last_activation = 0
 
     def activation(self, input_values=()):
         # if BIAS neuron, won't have input_values (input_values = weights * activations)
@@ -121,6 +139,7 @@ class Neuron(object):
         :return: float, the activation output value
         """
         if self.type == 'BIAS':
+            self.last_activation = 1
             return 1.0
         else:
             if input_values == [] or input_values == ():
@@ -128,9 +147,11 @@ class Neuron(object):
 
             x = sum(input_values)
             if self.type == 'SIGMOID':
-                return 1.0 / (1.0 + np.exp(-x))
+                self.last_activation = 1.0 / (1.0 + np.exp(-x))
+                return self.last_activation
             elif self.type == 'RELU':
-                return max(0.0, x)
+                self.last_activation = max(0.0, x)
+                return self.last_activation
 
     @staticmethod
     def delta(weights: list, deltas: list, activation: float):
