@@ -25,18 +25,18 @@ class NeuralNet(object):
     """
 
     def __init__(self, input_size, output_size, hidden_layers_sizes, neurons_type='sigmoid', alpha=0.0001,
-                 regularization=False):
+                 lamb=0.0):
         """
         :param input_size: int, size of an input
         :param output_size: int, size of an output
         :param hidden_layers_sizes: list of int, size of each hidden layer
         :param neurons_type: 'bias', 'sigmoid' or 'ReLU'
         :param alpha: float, alpha value
-        :param regularization: bool, True if want to use Regularization, False if not
+        :param lamb: float, lambda value (0.0 = no regularization)
         """
         self.neurons, self.connections = self._generate_NN(input_size, output_size, hidden_layers_sizes, neurons_type)
         self.alpha = alpha
-        self.regularization = regularization
+        self.lamb = lamb
         self.input_size = input_size
         self.hidden_layers_sizes = hidden_layers_sizes
         self.neuron_type = neurons_type
@@ -69,7 +69,6 @@ class NeuralNet(object):
     def back_propagation(self, nn_input: list, excpected_list: list):  # TODO
         """
         :list error: the error of the NN, calculated outside
-        remember to use self.regularization to see if need to use regularization or not
         probably will need to create smaller auxiliary function
         """
 

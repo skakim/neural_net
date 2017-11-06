@@ -1,6 +1,7 @@
 from neural_net import NeuralNet
 from statistics import mean, stdev
 from random import shuffle
+import argparse
 
 def read_dataset(filename): #TODO: we need to know how will be the dataset
     '''
@@ -18,7 +19,7 @@ def holdout(dataset, percentage_test): #TODO: we need to know how will be the da
     pass
 
 def cross_validation(dataset, percentage_test, iterations, mode,
-                     hidden_layers_sizes, neurons_type='sigmoid', alpha=0.0001, regularization=False):
+                     hidden_layers_sizes, neurons_type='sigmoid', alpha=0.0001, lamb=0.0):
     '''
     :param dataset: the full dataset
     :param percentage_test: float, percentage of instances that needs to go to the test partition
@@ -33,7 +34,7 @@ def cross_validation(dataset, percentage_test, iterations, mode,
         train_dataset, test_dataset = holdout(dataset, percentage_test)
         input_size = len(train_dataset.keys()[0])
         output_size = len(train_dataset[train_dataset.keys()[0]])
-        nn = NeuralNet(input_size, output_size, hidden_layers_sizes, neurons_type, alpha, regularization)
+        nn = NeuralNet(input_size, output_size, hidden_layers_sizes, neurons_type, alpha, lamb)
         train_NN(nn, train_dataset, mode)
         performance = test_NN(nn, test_dataset)
         results.append(performance)
@@ -83,6 +84,31 @@ def test_NN(NN, test_instances):
     pass
 
 if __name__ == "__main__":
-    #TODO: use argparse to read parameters like .txt name? depend how it will be given to us
-    dataset = read_dataset("test.txt")
-    #TODO: define here the tests we'll do
+    parser = argparse.ArgumentParser(description='Andre Driemeyer and Gabriel Moita\'s Neural Net Implementation')
+    subparsers = parser.add_subparsers(dest='mode')
+    subparsers.add_subparser('numeric-check', help='Perform the gradient numeric check.')
+    exec_mode = subparsers.add_subparser('test', action='store_true', help='Test a Neural Net with defined parameters.')
+    exec_mode.add_argument('dataset', choices=['survival', 'wine', 'contraceptive', 'cancer'],
+                           help='The dataset that will be used.')
+    exec_mode.add_argument('-n', '--hidden-layers-sizes', nargs='+', type=int, default=[2])
+    exec_mode.add_argument('-t', '--neurons-type', choices=['sigmoid', 'relu'], default='sigmoid')
+    exec_mode.add_argument('-a', '--alpha', type=float, default=0.01)
+    exec_mode.add_argument('-l', '--lambda', type=float, default=0.0)
+    auto_mode = subparsers.add_subparser('auto', action='store_true', help='Normal (automatic) execution.')
+    auto_mode.add_argument('dataset', choices=['survival', 'wine', 'contraceptive', 'cancer'],
+                                help='The dataset that will be used.')
+    auto_mode.add_argument('-p', '--proportion', default=0.8,
+                                help='The proportion used by cross-validation.')
+    auto_mode.add_argument('--relu', action='store_true',
+                                help='Use ReLU function (default: sigmoid).')
+    args = parser.parse_args()
+
+    if args['mode']=='numeric-check':
+        #TODO: call the numeric-check function, as suggested in the spec
+        pass
+    elif args['mode']=='test':
+        #TODO: create NN with the given arguments, train it and test
+        pass
+    elif args['mode']=='auto':
+        #TODO: read the chosen dataset + main loop of automatic NN cross-validation arguments choosing + etc
+        pass
