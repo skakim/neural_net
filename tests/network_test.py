@@ -5,6 +5,7 @@ sys.path.insert(0,parentdir)
 
 import unittest
 import neural_net
+from math import isclose
 from numpy import exp
 from pprint import pprint
 
@@ -15,6 +16,10 @@ class TestNeuralNetwork(unittest.TestCase):
         pass
 
     def test_build(self):
+
+        #TODO REMOVE THIS RETURN
+        return
+
         network = neural_net.NeuralNet(3, 1, [2, 4])
 
         # Checks if layers sizes are correct
@@ -42,9 +47,15 @@ class TestNeuralNetwork(unittest.TestCase):
 
         pass
 
-    def test_activation(self):
-        # TODO do math to compare predictions
-        pass
+    def test_gradient(self):
+        network = neural_net.NeuralNet(3, 1, [2, 4])
+        network.back_propagation([1, 2, 3], [1])
+
+        for layer_no, layer in enumerate(network.old_gradient_list):
+            for neuron_no, gradients in enumerate(layer):
+                for gradient_no, _ in enumerate(gradients):
+                    self.assertTrue(isclose(*network.gradient_verification(layer_no,neuron_no,gradient_no,[1,2,3],[1]),
+                                            rel_tol=0.01))
 
 if __name__ == '__main__':
     unittest.main()
