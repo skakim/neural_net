@@ -66,27 +66,56 @@ class NeuralNet(object):
 
         return activations, all_activations
 
-    def back_propagation(self, nn_input: list, excpected_list: list):  # TODO
+    def back_propagation(self, nn_input: list, expected_list: list):  # TODO
         """
         :list error: the error of the NN, calculated outside
+        remember to use self.regularization to see if need to use regularization or not
         probably will need to create smaller auxiliary function
         """
 
         prediction_list, activations = self.predict(nn_input)
 
+        reverse_delta_list = self._reverse_delta_list(prediction_list, expected_list)
+
+        gradient_list = self._gradient_list(reverse_delta_list)
+
+        self._update_connections(gradient_list)
+
+    def _update_connections(self, gradient_list):
+        for layer_no, layer in enumerate(self.connections):
+            for neuron_no, neuron in enumerate(layer):
+                for theta_no, theta in enumerate(neuron):
+                    self.connections[layer_no][neuron_no][theta_no] = self.connections[layer_no][neuron_no][theta_no] - \
+                                                                      gradient_list[layer_no][neuron_no] * self.alpha
+
+    def _gradient_list(self, reverse_delta_list):
+
+        reverse_gradient_list = []
+        for neuron_layer, delta_layer in zip(reversed(self.neurons), reverse_delta_list):
+            temp_layer = []
+            for neuron, delta in zip(neuron_layer, delta_layer):
+                temp_layer.append(neuron.last_activation * delta)
+            reverse_gradient_list.append(temp_layer)
+
+        return reverse_gradient_list[::-1]
+
+    def _reverse_delta_list(self, prediction_list, excpected_list):
+
         all_deltas = []
         current_deltas = [prediction - excpected for prediction, excpected in zip(prediction_list, excpected_list)]
         all_deltas.append(current_deltas)
 
-        for layer_no, layer in reversed(list(enumerate(self.neurons))):
+        for layer_no, layer in reversed(list(enumerate(self.neurons[:-1]))):
             new_deltas = []
-            for neuron_no, neuron in layer:
-                delta = sum([d * w[neuron_no] for d, w in zip(current_deltas, self.connections[layer_no])])\
+            for neuron_no, neuron in enumerate(layer):
+                delta = sum([d * w[neuron_no] for d, w in zip(current_deltas, self.connections[layer_no+1])])\
                              * neuron.last_activation * (1 - neuron.last_activation)
                 new_deltas.append(delta)
             all_deltas.append(new_deltas)
             current_deltas = new_deltas
         pass
+
+        return all_deltas
 
     @staticmethod
     def _generate_NN(input_size, output_size, hidden_layers_sizes, neurons_type='sigmoid'):
