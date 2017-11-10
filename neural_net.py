@@ -16,7 +16,7 @@ def random_weight():
     stddev = 0.15
 
     value = 0.0
-    while (value == 0.0):  # not really beautiful, but works
+    while value == 0.0:  # not really beautiful, but works
         value = np.random.normal(average, stddev)
     return value
 
@@ -37,7 +37,7 @@ class NeuralNet(object):
         :param alpha: float, alpha value
         :param lamb: float, lambda value (0.0 = no regularization)
         """
-        self.neurons, self.connections = self._generate_NN(input_size, output_size, hidden_layers_sizes, neurons_type)
+        self.neurons, self.connections = self._generate_nn(input_size, output_size, hidden_layers_sizes, neurons_type)
         self.alpha = alpha
         self.lamb = lamb
         self.input_size = input_size
@@ -47,9 +47,6 @@ class NeuralNet(object):
         self.old_connections = deepcopy(self.connections)
         self.last_prediction = []
         self.last_expected = []
-        self.back_propagation_error = 1
-
-
 
     def predict(self, nn_input: list) -> (list, list):
         """
@@ -74,11 +71,9 @@ class NeuralNet(object):
             all_activations.append(new_activations)
             activations = new_activations
 
-
-
         return activations, all_activations
 
-    def back_propagation(self, nn_input: list, expected_list: list):  # TODO
+    def back_propagation(self, nn_input: list, expected_list: list, error):
         """
         :list error: the error of the NN, calculated outside
         remember to use self.regularization to see if need to use regularization or not
@@ -95,15 +90,15 @@ class NeuralNet(object):
 
         self.old_gradient_list = gradient_list
 
-        self._update_connections(gradient_list)
+        self._update_connections(gradient_list, error)
 
-    def _update_connections(self, gradient_list):
+    def _update_connections(self, gradient_list, error):
         for layer_no, layer in enumerate(self.connections):
             for neuron_no, neuron in enumerate(layer):
                 for theta_no, theta in enumerate(neuron):
                     self.connections[layer_no][neuron_no][theta_no] = self.connections[layer_no][neuron_no][theta_no] - \
                                                                       (gradient_list[layer_no][neuron_no][theta_no] *
-                                                                       self.alpha * self.backpropagation_error)
+                                                                       self.alpha * error)
 
     def _gradient_list(self, reverse_delta_list, nn_input):
 
@@ -111,8 +106,6 @@ class NeuralNet(object):
         gradient_list = []
 
         first_layer = [1] + nn_input
-
-
 
         temp_list = []
         for neuron_no, connections in enumerate(self.connections[0]):
@@ -128,20 +121,6 @@ class NeuralNet(object):
 
                 temp_layer.append(temp_connection_list)
             gradient_list.append(temp_layer)
-
-
-
-        """
-        for neuron_layer, delta_layer in zip(reversed(self.neurons), reverse_delta_list):
-            pprint(neuron_layer)
-            pprint(delta_layer)
-            temp_layer = []
-            for neuron, delta in zip(neuron_layer, delta_layer):
-                temp_layer.append(neuron.last_activation * delta)
-            reverse_gradient_list.append(temp_layer)
-        """
-
-
 
         return gradient_list
 
@@ -163,8 +142,7 @@ class NeuralNet(object):
         return all_deltas
 
     @staticmethod
-    def _generate_NN(input_size, output_size, hidden_layers_sizes, neurons_type='sigmoid'):
-        # TODO transform this in a private method of NeuralNet
+    def _generate_nn(input_size, output_size, hidden_layers_sizes, neurons_type='sigmoid'):
         """
         :param input_size: int, size of an input
         :param output_size: int, size of an output
@@ -185,7 +163,7 @@ class NeuralNet(object):
 
         neurons.append([Neuron(neurons_type) for _ in range(0, output_size)])
 
-        #Iterates all layers except first because it is the input layer.
+        # Iterates all layers except first because it is the input layer.
         for layer_no, layer in enumerate(neurons[1:], start=1):
             neurons_connections = []
             for _ in layer:
@@ -200,7 +178,16 @@ class NeuralNet(object):
         return sum([(-y * (log(f))) - ((1 - y)*(log(1 - f))) for y, f in zip(expected, predicted)])
 
     def gradient_verification(self, delta_layer_no, delta_neuron_no, delta_no, nn_input, expected_list, epsilon=0.001):
-
+        """
+        Inefficient method used for testing the gradient after a backpropagation call
+        :param delta_layer_no: 
+        :param delta_neuron_no: 
+        :param delta_no: 
+        :param nn_input: 
+        :param expected_list: 
+        :param epsilon: 
+        :return: 
+        """
         gradients = deepcopy(self.old_gradient_list)
         current_connections = deepcopy(self.connections)
         old_connection_with_lower_delta = deepcopy(self.old_connections)
@@ -220,12 +207,9 @@ class NeuralNet(object):
 
         self.connections = current_connections
 
-        error_current = self.calculate_error(prediction_current_connection, expected_list)
+        # error_current = self.calculate_error(prediction_current_connection, expected_list)
         error_lower = self.calculate_error(prediction_lower_delta, expected_list)
         error_higher = self.calculate_error(prediction_higher_delta, expected_list)
-
-
-        # print(delta_layer_no, delta_neuron_no, delta_no, gradients[delta_layer_no][delta_neuron_no][delta_no], (error_higher - error_lower)/(2*epsilon))
 
         return gradients[delta_layer_no][delta_neuron_no][delta_no], (error_higher - error_lower)/(2*epsilon)
 
