@@ -5,10 +5,8 @@ from collections import OrderedDict
 from math import log
 from pprint import pprint
 from time import sleep
-
-
-def verify(neural_net):
-    pass
+from random import uniform
+from math import isclose
 
 def random_weight():
     """
@@ -44,6 +42,7 @@ class NeuralNet(object):
         self.alpha = alpha
         self.lamb = lamb
         self.input_size = input_size
+        self.output_size = output_size
         self.hidden_layers_sizes = hidden_layers_sizes
         self.neuron_type = neurons_type
         self.old_gradient_list = []
@@ -254,3 +253,25 @@ class Neuron(object):
         :return: the delta value (to calc the gradients to att the weights)
         """
         return sum([w * d for w, d in zip(weights, deltas)]) * activation * (1 - activation)
+
+
+def verify(neural_net: NeuralNet):
+    nn_input = [uniform(0, 1) for _ in range(0,neural_net.input_size)]
+    nn_output = [uniform(0, 1) for _ in range(0,neural_net.output_size)]
+
+    # TODO remove error parameter
+    neural_net.back_propagation(nn_input, nn_output, uniform(0,1))
+
+    print('Validating delta via numeric aproximation with error margin of 1%')
+    for connectons_layer_no, connections_layer in enumerate(neural_net.connections):
+        for neuron_connections_no, neuron_connections in enumerate(connections_layer):
+            for connection_no, connection in enumerate(neuron_connections):
+                result = neural_net.gradient_verification(connectons_layer_no, neuron_connections_no, connection_no,
+                                                          nn_input, nn_output)
+                print("Connection(%d,%d,%d)\n Backpropagation Value: %.10f\nNumeric Aprox Value: %.10f\n Within error "
+                     "margin? %s"%
+                     (connectons_layer_no, neuron_connections_no, connection_no, result[0], result[1],
+                      str(isclose(*result, rel_tol=0.01))))
+
+
+    pass
