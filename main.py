@@ -193,7 +193,7 @@ if __name__ == "__main__":
     if str(mode_parser.mode) == 'verify':
         input_nn = str(mode_argument_parses.i[0])
         try:
-            with open(input_nn) as input_file:
+            with open(input_nn,'rb') as input_file:
                 neural_net = pickle.load(input_file)
                 verify(neural_net)
         except EnvironmentError:
