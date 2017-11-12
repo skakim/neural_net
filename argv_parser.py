@@ -18,6 +18,7 @@ def parser() -> (argparse.Namespace, list):
     mode_p.add_parser('test', help='test a neural network given a test_set')
     mode_p.add_parser('train', help='trains a neural network given a data_set')
     mode_p.add_parser('auto_train', help='automated training')
+    mode_p.add_parser('verify', help='verify neural_net integrity')
 
     args_first, leftovers = mode_parser.parse_known_args()
 
@@ -42,10 +43,13 @@ def parser() -> (argparse.Namespace, list):
         second_parser = argparse.ArgumentParser(prog='train')
         second_parser.add_argument('-i', nargs=1, help='input neural_net', required=True)
         second_parser.add_argument('-o', nargs=1, help='output trained_net', required=True)
-        second_parser.add_argument('-data',  nargs=1, help='input dataset', required=True)
+        second_parser.add_argument('-data',  nargs=1, help='input dataset',
+                                   choices=['survival', 'wine', 'contraceptive', 'cancer'], required=True)
+    elif str(args_first.mode) == 'verify':
+        second_parser = argparse.ArgumentParser(prog='verify')
+        second_parser.add_argument('-i', nargs=1, help='input neural_net', required=True)
     else:
         second_parser = argparse.ArgumentParser(prog='auto_train')
-        second_parser.add_argument('-i', nargs=1, help='input neural_net', required=True)
         second_parser.add_argument('-o', nargs=1, help='output trained_net', required=True)
         second_parser.add_argument('-data',  nargs=1, help='input dataset', required=True)
 
