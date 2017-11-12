@@ -1,4 +1,4 @@
-from neural_net import NeuralNet
+from neural_net import NeuralNet, verify
 from statistics import mean, stdev
 from random import shuffle
 import argparse
@@ -168,12 +168,6 @@ def test_NN(NN, test_instances):
     """
     pass
 
-
-def verify(neural_net: NeuralNet):
-    size = neural_net.input_size
-    pass
-
-
 if __name__ == "__main__":
     mode_parser, mode_argument_parses = parser()
 
@@ -200,10 +194,11 @@ if __name__ == "__main__":
             exit()
 
     if str(mode_parser.mode) == 'verify':
-        input_nn = str(mode_argument_parses.o[0])
+        input_nn = str(mode_argument_parses.i[0])
         try:
             with open(input_nn) as input_file:
                 neural_net = pickle.load(input_file)
+                verify(neural_net)
         except EnvironmentError:
             print("Can't open file %s" % input_nn)
             exit()
