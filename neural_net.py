@@ -87,6 +87,7 @@ class NeuralNet(object):
         self.last_expected = deepcopy(expected_list)
 
         error = self.calculate_error(prediction_list, expected_list)
+        error += sum([feature**2 for feature in nn_input]) * self.lamb
 
         reverse_delta_list = self._reverse_delta_list(prediction_list, expected_list)
 
