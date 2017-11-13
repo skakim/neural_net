@@ -205,7 +205,9 @@ def train_NN(NN, train_instances):
             error_acc += NN.back_propagation(list(instance), train_instances[instance])
         mean_error = error_acc/number_of_instances
         #print(mean_error)
-        if (abs(mean_error-errors[-1])/((mean_error+errors[-1]))/2) < 0.0001: #stop condition
+        if i%100 == 0:
+            print(i)
+        if i > 1000: #(abs(mean_error-errors[-1])/((mean_error+errors[-1]))/2) < 0.0001: #stop condition
             errors.append(mean_error)
             return errors
         errors.append(mean_error)
@@ -235,8 +237,8 @@ def test_NN(NN, test_instances):
     return float(acc)/float(number_of_instances)
 
 if __name__ == "__main__":
-    dataset = read_dataset('survival')
-    print(cross_validation(dataset, 0.2, 5, [3,5,2], neurons_type='sigmoid', alpha=0.001, lamb=0.01))
+    dataset = read_dataset('wine')
+    print(cross_validation(dataset, 0.2, 5, [13,5], neurons_type='sigmoid', alpha=0.01, lamb=0.0))
     """mode_parser, mode_argument_parses = parser()
 
     if str(mode_parser.mode) == 'create_net':
