@@ -104,16 +104,65 @@ def read_dataset(dataset):
     return data
 
 
-def holdout(dataset, percentage_test):  # TODO: we need to know how will be the dataset (there are classes? how much?)
+def holdout(dataset, percentage_test):
     """
     :param dataset: the full dataset
     :param percentage_test: float, percentage of instances that needs to go to the test partition
     :return: (dict_of_train_instances, dict_of_test_instances)
     """
-    pass
+    number_classes = len(dataset) #if 2, only one output, if 3, three outputs
+
+    if number_classes == 2:
+        group1 = dataset[0]
+        group2 = dataset[1]
+        shuffle(group1)
+        shuffle(group2)
+
+        n_g1 = int(len(group1) * percentage_test)
+        n_g2 = int(len(group2) * percentage_test)
+
+        group1_train_dataset = group1[:n_g1]
+        group1_test_dataset = group1[n_g1:]
+        group2_train_dataset = group2[:n_g2]
+        group2_test_dataset = group2[n_g2:]
+
+        train_dataset = {tuple(x):[0.0] for x in group1_train_dataset}
+        train_dataset.update({tuple(x):[1.0] for x in group2_train_dataset})
+
+        test_dataset = {tuple(x): [0.0] for x in group1_test_dataset}
+        test_dataset.update({tuple(x): [1.0] for x in group2_test_dataset})
+
+    else:
+        group1 = dataset[0]
+        group2 = dataset[1]
+        group3 = dataset[2]
+        shuffle(group1)
+        shuffle(group2)
+        shuffle(group3)
+
+        n_g1 = int(len(group1) * percentage_test)
+        n_g2 = int(len(group2) * percentage_test)
+        n_g3 = int(len(group2) * percentage_test)
+
+        group1_train_dataset = group1[:n_g1]
+        group1_test_dataset = group1[n_g1:]
+        group2_train_dataset = group2[:n_g2]
+        group2_test_dataset = group2[n_g2:]
+        group3_train_dataset = group3[:n_g3]
+        group3_test_dataset = group3[n_g3:]
+
+        train_dataset = {tuple(x): [1.0, 0.0, 0.0] for x in group1_train_dataset}
+        train_dataset.update({tuple(x): [0.0, 1.0, 0.0] for x in group2_train_dataset})
+        train_dataset.update({tuple(x): [0.0, 0.0, 1.0] for x in group3_train_dataset})
+
+        test_dataset = {tuple(x): [1.0, 0.0, 0.0] for x in group1_test_dataset}
+        test_dataset.update({tuple(x): [0.0, 1.0, 0.0] for x in group2_test_dataset})
+        test_dataset.update({tuple(x): [0.0, 0.0, 1.0] for x in group3_test_dataset})
+
+    return (train_dataset,test_dataset)
 
 
-def cross_validation(dataset, percentage_test, iterations, mode,
+def cross_validation(dataset, percentage_test, iterations,
                      hidden_layers_sizes, neurons_type='sigmoid', alpha=0.0001, lamb=0.0):
     """
     :param dataset: the full dataset
@@ -126,11 +175,12 @@ def cross_validation(dataset, percentage_test, iterations, mode,
     """
     results = []
     for it in range(1, iterations + 1):
+        print("Iteration",it)
         train_dataset, test_dataset = holdout(dataset, percentage_test)
-        input_size = len(train_dataset.keys()[0])
-        output_size = len(train_dataset[train_dataset.keys()[0]])
+        input_size = len(list(train_dataset.keys())[0])
+        output_size = len(list(train_dataset.values())[0])
         nn = NeuralNet(input_size, output_size, hidden_layers_sizes, neurons_type, alpha, lamb)
-        train_NN(nn, train_dataset, mode)
+        train_NN(nn, train_dataset)
         performance = test_NN(nn, test_dataset)
         results.append(performance)
 
@@ -142,18 +192,23 @@ def train_NN(NN, train_instances):
     :param NN: the neural net
     :param train_instances: the train instances dict
     """
+    errors = [1.0]
     number_of_instances = len(train_instances.keys())
+    i=0
     while True:
+        i+=1
         # accumulate the errors
         error_acc = 0.0
-        for instance in train_instances.keys():
-            output = NN.predict(instance)
-            error_acc += (output - train_instances[instance]) / number_of_instances
-        # call back_propagation
-        NN.back_propagation(error_acc)
-
-        if __stop_conditions:  # TODO: we need to talk about what will be the stop condition(s) (ask Bruno too)
-            break
+        instances = list(train_instances.keys())
+        shuffle(instances)
+        for instance in instances:
+            error_acc += NN.back_propagation(list(instance), train_instances[instance])
+        mean_error = error_acc/number_of_instances
+        #print(mean_error)
+        if (abs(mean_error-errors[-1])/((mean_error+errors[-1]))/2) < 0.0001: #stop condition
+            errors.append(mean_error)
+            return errors
+        errors.append(mean_error)
 
 
 def test_NN(NN, test_instances):
@@ -163,10 +218,26 @@ def test_NN(NN, test_instances):
     :return: the performance of the NN in test_mode
     only implemented after we know what will be the dataset (predict a category or a number? this is relevant)
     """
-    pass
+    number_of_instances = len(test_instances.keys())
+    acc = 0
+    for instance in list(test_instances.keys()):
+        expected = test_instances[instance]
+        output,_ = NN.predict(list(instance))
+        if len(expected) == 1:
+            if expected[0] == 0.0 and output[0] < 0.5:
+                acc += 1
+            if expected[0] == 1.0 and output[0] > 0.5:
+                acc += 1
+        else:
+            if expected.index(max(expected)) == output.index(max(output)):
+                acc += 1
+    print(float(acc)/float(number_of_instances))
+    return float(acc)/float(number_of_instances)
 
 if __name__ == "__main__":
-    mode_parser, mode_argument_parses = parser()
+    dataset = read_dataset('survival')
+    print(cross_validation(dataset, 0.2, 5, [3,5,2], neurons_type='sigmoid', alpha=0.001, lamb=0.01))
+    """mode_parser, mode_argument_parses = parser()
 
     if str(mode_parser.mode) == 'create_net':
         print(mode_argument_parses.o)
@@ -198,5 +269,5 @@ if __name__ == "__main__":
                 verify(neural_net)
         except EnvironmentError:
             print("Can't open file %s" % input_nn)
-            exit()
+            exit()"""
 
