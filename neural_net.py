@@ -268,8 +268,8 @@ def verify(neural_net: NeuralNet):
             for connection_no, connection in enumerate(neuron_connections):
                 result = neural_net.gradient_verification(connectons_layer_no, neuron_connections_no, connection_no,
                                                           nn_input, nn_output)
-                print("Connection(%d,%d,%d)\n Backpropagation Value: %.10f\nNumeric Aprox Value: %.10f\n Within error "
-                     "margin? %s"%
+                print("Connection(%d,%d,%d)\nBackpropagation Value: %.10f\nNumeric Aprox Value:   %.10f\nWithin error "
+                     "margin? %s\n"%
                      (connectons_layer_no, neuron_connections_no, connection_no, result[0], result[1],
                       str(isclose(*result, rel_tol=0.01))))
 
