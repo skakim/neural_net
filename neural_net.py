@@ -75,7 +75,7 @@ class NeuralNet(object):
 
         return activations, all_activations
 
-    def back_propagation(self, nn_input: list, expected_list: list, error):
+    def back_propagation(self, nn_input: list, expected_list: list):
         """
         :list error: the error of the NN, calculated outside
         remember to use self.regularization to see if need to use regularization or not
@@ -85,6 +85,8 @@ class NeuralNet(object):
         prediction_list, activations = self.predict(nn_input)
         self.last_prediction = deepcopy(prediction_list)
         self.last_expected = deepcopy(expected_list)
+
+        error = self.calculate_error(prediction_list, expected_list)
 
         reverse_delta_list = self._reverse_delta_list(prediction_list, expected_list)
 
@@ -259,8 +261,8 @@ def verify(neural_net: NeuralNet):
     nn_input = [uniform(0, 1) for _ in range(0,neural_net.input_size)]
     nn_output = [uniform(0, 1) for _ in range(0,neural_net.output_size)]
 
-    # TODO remove error parameter
-    neural_net.back_propagation(nn_input, nn_output, uniform(0,1))
+
+    neural_net.back_propagation(nn_input, nn_output)
 
     print('Validating delta via numeric aproximation with error margin of 1%')
     for connectons_layer_no, connections_layer in enumerate(neural_net.connections):
