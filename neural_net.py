@@ -96,6 +96,8 @@ class NeuralNet(object):
 
         self._update_connections(gradient_list, error)
 
+        return error
+
     def _update_connections(self, gradient_list, error):
         for layer_no, layer in enumerate(self.connections):
             for neuron_no, neuron in enumerate(layer):
