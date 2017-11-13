@@ -87,7 +87,8 @@ class NeuralNet(object):
         self.last_expected = deepcopy(expected_list)
 
         error = self.calculate_error(prediction_list, expected_list)
-        error += sum([feature**2 for feature in nn_input]) * self.lamb
+
+        error += self.regression_calc(self.connections,self.lamb)
 
         reverse_delta_list = self._reverse_delta_list(prediction_list, expected_list)
 
@@ -99,13 +100,27 @@ class NeuralNet(object):
 
         return error
 
+    @staticmethod
+    def regression_calc(connection_list, lamb):
+        size_counter = 0
+        connection_sum = 0
+        for layer in connection_list:
+            for neuron in layer[1:]:
+                for connection in neuron:
+                    connection_sum += connection
+                    size_counter += 1
+        return (lamb / (2 * size_counter)) * connection_sum
+
+
+
     def _update_connections(self, gradient_list, error):
         for layer_no, layer in enumerate(self.connections):
             for neuron_no, neuron in enumerate(layer):
                 for theta_no, theta in enumerate(neuron):
-                    self.connections[layer_no][neuron_no][theta_no] = self.connections[layer_no][neuron_no][theta_no] - \
-                                                                      (gradient_list[layer_no][neuron_no][theta_no] *
-                                                                       self.alpha * error)
+                    self.connections[layer_no][neuron_no][theta_no] = (self.connections[layer_no][neuron_no][theta_no] -
+                                                                       (gradient_list[layer_no][neuron_no][theta_no] *
+                                                                       self.alpha * error))
+
 
     def _gradient_list(self, reverse_delta_list, nn_input):
 
@@ -124,7 +139,9 @@ class NeuralNet(object):
             for neuron_no, connections in enumerate(connections_layer):
                 temp_connection_list = []
                 for connection_no, a_connection in enumerate(connections):
-                    temp_connection_list.append(self.neurons[layer_no-1][connection_no].last_activation * delta_list[layer_no][neuron_no])
+                    temp_connection_list.append((self.neurons[layer_no-1][connection_no].last_activation *
+                                                delta_list[layer_no][neuron_no]) +
+                                                (self.lamb * self.connections[layer_no][neuron_no][connection_no]))
 
                 temp_layer.append(temp_connection_list)
             gradient_list.append(temp_layer)
@@ -182,7 +199,11 @@ class NeuralNet(object):
 
     @staticmethod
     def calculate_error(predicted: list, expected: list) -> float:
-        return sum([(-y * (log(f))) - ((1 - y)*(log(1 - f))) for y, f in zip(expected, predicted)])
+        try:
+            return sum([(-y * (log(f))) - ((1 - y)*(log(1 - f))) for y, f in zip(expected, predicted)])
+        except:
+            print(predicted, expected)
+            raise
 
     def gradient_verification(self, delta_layer_no, delta_neuron_no, delta_no, nn_input, expected_list, epsilon=0.001):
         """
