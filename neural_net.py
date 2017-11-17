@@ -39,6 +39,7 @@ class NeuralNet(object):
         :param lamb: float, lambda value (0.0 = no regularization)
         """
         self.neurons, self.connections = self._generate_nn(input_size, output_size, hidden_layers_sizes, neurons_type)
+        self.connections = np.array(self.connections)
         self.alpha = alpha
         self.lamb = lamb
         self.input_size = input_size
@@ -67,9 +68,12 @@ class NeuralNet(object):
 
         for layer_no, layer in enumerate(self.neurons):
             new_activations = []
+            temp = []
             for neuron_no, neuron in enumerate(layer):
                 activation_input = [a * w for a, w in zip(activations, self.connections[layer_no][neuron_no])]
+                temp.append(activation_input)
                 new_activations.append(neuron.activation(activation_input))
+
             all_activations.append(new_activations)
             activations = new_activations
 
@@ -111,17 +115,12 @@ class NeuralNet(object):
                     size_counter += 1
         return (lamb / (2 * size_counter)) * connection_sum
 
-
-
     def _update_connections(self, gradient_list, error):
-        for layer_no, layer in enumerate(self.connections):
-            for neuron_no, neuron in enumerate(layer):
-                for theta_no, theta in enumerate(neuron):
-                    self.connections[layer_no][neuron_no][theta_no] = (self.connections[layer_no][neuron_no][theta_no] -
-                                                                       (gradient_list[layer_no][neuron_no][theta_no] *
-                                                                       self.alpha * error))
+        for layer_no, _ in enumerate(self.connections):
+            self.connections[layer_no] =\
+                np.subtract(self.connections[layer_no], np.array(gradient_list[layer_no]) * self.alpha * error)
 
-
+            
     def _gradient_list(self, reverse_delta_list, nn_input):
 
         delta_list = reverse_delta_list[::-1]
@@ -146,20 +145,20 @@ class NeuralNet(object):
                 temp_layer.append(temp_connection_list)
             gradient_list.append(temp_layer)
 
-        return gradient_list
+        return np.array(gradient_list)
 
-    def _reverse_delta_list(self, prediction_list, excpected_list):
+    def _reverse_delta_list(self, prediction_list, expected_list):
 
         all_deltas = []
-        current_deltas = [prediction - excpected for prediction, excpected in zip(prediction_list, excpected_list)]
+        current_deltas = [prediction - expected for prediction, expected in zip(prediction_list, expected_list)]
         all_deltas.append(current_deltas)
 
         for layer_no, layer in reversed(list(enumerate(self.neurons[:-1]))):
-            new_deltas = []
-            for neuron_no, neuron in enumerate(layer):
-                delta = sum([d * w[neuron_no] for d, w in zip(current_deltas, self.connections[layer_no+1])])\
-                             * neuron.last_activation * (1 - neuron.last_activation)
-                new_deltas.append(delta)
+            test_deltas = np.dot(np.transpose(self.connections[layer_no+1]), current_deltas)
+            activation = np.array([neuron.last_activation for neuron in layer])
+
+            new_deltas = test_deltas*activation*(1-activation)
+
             all_deltas.append(new_deltas)
             current_deltas = new_deltas
 
