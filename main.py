@@ -3,6 +3,7 @@ from statistics import mean, stdev
 from random import shuffle
 import argparse
 import csv
+import numpy as np
 from argv_parser import parser
 import pickle
 
@@ -10,7 +11,6 @@ import pickle
 def normalize(value, oldmin, oldmax, newmin, newmax):  # will use to put everything between 0 and 1
     newvalue = (((float(value) - oldmin) * (newmax - newmin)) / (oldmax - oldmin)) + newmin
     return newvalue
-
 
 def read_dataset(dataset):
     """
@@ -63,7 +63,7 @@ def read_dataset(dataset):
         # wage: 16.0-49.0
         # weduc: 1.0-4.0
         # heduc: 1.0-4.0
-        ##child: 0.0-16.0
+        # child: 0.0-16.0
         # wrelig: 0.0-1.0
         # wwork: 0.0-1.0
         # hoccup: 1.0-4.0
@@ -104,10 +104,10 @@ def read_dataset(dataset):
     return data
 
 
-def holdout(dataset, percentage_test):
+def holdout(dataset, percentage_train):
     """
     :param dataset: the full dataset
-    :param percentage_test: float, percentage of instances that needs to go to the test partition
+    :param percentage_train: float, percentage of instances that needs to go to the test partition
     :return: (dict_of_train_instances, dict_of_test_instances)
     """
     number_classes = len(dataset) #if 2, only one output, if 3, three outputs
@@ -118,8 +118,8 @@ def holdout(dataset, percentage_test):
         shuffle(group1)
         shuffle(group2)
 
-        n_g1 = int(len(group1) * percentage_test)
-        n_g2 = int(len(group2) * percentage_test)
+        n_g1 = int(len(group1) * percentage_train)
+        n_g2 = int(len(group2) * percentage_train)
 
         group1_train_dataset = group1[:n_g1]
         group1_test_dataset = group1[n_g1:]
@@ -140,9 +140,9 @@ def holdout(dataset, percentage_test):
         shuffle(group2)
         shuffle(group3)
 
-        n_g1 = int(len(group1) * percentage_test)
-        n_g2 = int(len(group2) * percentage_test)
-        n_g3 = int(len(group2) * percentage_test)
+        n_g1 = int(len(group1) * percentage_train)
+        n_g2 = int(len(group2) * percentage_train)
+        n_g3 = int(len(group2) * percentage_train)
 
         group1_train_dataset = group1[:n_g1]
         group1_test_dataset = group1[n_g1:]
@@ -162,32 +162,37 @@ def holdout(dataset, percentage_test):
     return (train_dataset,test_dataset)
 
 
-def cross_validation(dataset, percentage_test, iterations,
+def cross_validation(dataset, percentage_train, iterations, iterations_per_iteration,
                      hidden_layers_sizes, neurons_type='sigmoid', alpha=0.0001, lamb=0.0):
     """
     :param dataset: the full dataset
-    :param percentage_test: float, percentage of instances that needs to go to the test partition
+    :param percentage_train: float, percentage of instances that needs to go to the test partition
     :param iterations: int, number of holdouts to execute
     should call holdout to generate the train and test dicts
     should call train_NN to train the dataset
     should call test_NN to get the performances
     :return: (average_performance, stddev_performance)
     """
-    results = []
+    accuracies = []
+    precisions = []
+    recalls = []
     for it in range(1, iterations + 1):
-        print("Iteration",it)
-        train_dataset, test_dataset = holdout(dataset, percentage_test)
+        #print("Iteration",it)
+        train_dataset, test_dataset = holdout(dataset, percentage_train)
         input_size = len(list(train_dataset.keys())[0])
         output_size = len(list(train_dataset.values())[0])
         nn = NeuralNet(input_size, output_size, hidden_layers_sizes, neurons_type, alpha, lamb)
-        train_NN(nn, train_dataset)
-        performance = test_NN(nn, test_dataset)
-        results.append(performance)
+        train_NN(nn, train_dataset, iterations_per_iteration)
+        accuracy,precision,recall = test_NN(nn, test_dataset)
+        accuracies.append(accuracy)
+        precisions.append(precision)
+        recalls.append(recall)
+    return (mean(accuracies), stdev(accuracies),
+            mean(precisions), stdev(precisions),
+            mean(recalls), stdev(recalls))
 
-    return (mean(results), stdev(results))
 
-
-def train_NN(NN, train_instances):
+def train_NN(NN, train_instances, iterations):
     """
     :param NN: the neural net
     :param train_instances: the train instances dict
@@ -205,12 +210,52 @@ def train_NN(NN, train_instances):
             error_acc += NN.back_propagation(list(instance), train_instances[instance])
         mean_error = error_acc/number_of_instances
         #print(mean_error)
-        if i%100 == 0:
-            print(i)
-        if i > 1000: #(abs(mean_error-errors[-1])/((mean_error+errors[-1]))/2) < 0.0001: #stop condition
+        #if i%100 == 0:
+            #print(i)
+        if i > iterations: #(abs(mean_error-errors[-1])/((mean_error+errors[-1]))/2) < 0.0001: #stop condition
             errors.append(mean_error)
             return errors
         errors.append(mean_error)
+
+def accuracy(cm,n_instances):
+    acc = 0
+    for i in range(len(cm)):
+        acc += cm[i][i]
+    return acc/n_instances
+
+def precision(cm):
+    acc = 0.0
+    cm = np.array(cm)
+    if len(cm) == 2:
+        true_positive = cm[0,0]
+        false_positive = sum(cm[:,0]) - cm[0,0]
+        acc = true_positive/(true_positive+false_positive)
+    else:
+        for i in range(len(cm)):
+            true_positive = cm[i,i]
+            false_positive = sum(cm[:,i])  - cm[i,i]
+            p = true_positive/(true_positive+false_positive)
+            acc += p
+        acc = acc/len(cm)
+
+    return acc
+
+def recall(cm):
+    acc = 0.0
+    cm = np.array(cm)
+
+    if len(cm) == 2:
+        true_positive = cm[0,0]
+        false_negative = sum(cm[0,:]) - cm[0,0]
+        acc = true_positive/(true_positive+false_negative)
+    else:
+        for i in range(len(cm)):
+            true_positive = cm[i,i]
+            false_negative = sum(cm[i,:]) - cm[i,i]
+            r = true_positive/(true_positive+false_negative)
+            acc += r
+        acc = acc / len(cm)
+    return acc
 
 
 def test_NN(NN, test_instances):
@@ -220,25 +265,42 @@ def test_NN(NN, test_instances):
     :return: the performance of the NN in test_mode
     only implemented after we know what will be the dataset (predict a category or a number? this is relevant)
     """
+    l = len(list(test_instances.values())[0])
+    if l == 1:
+        confusion_matrix = [[0.0,0.0],[0.0,0.0]]
+        number_of_each_class = [0.0,0.0]
+    else:
+        confusion_matrix = [[0.0]*l for _ in range(l)]
+        number_of_each_class = [0.0] * l
     number_of_instances = len(test_instances.keys())
-    acc = 0
     for instance in list(test_instances.keys()):
         expected = test_instances[instance]
         output,_ = NN.predict(list(instance))
-        if len(expected) == 1:
+        if l == 1:
             if expected[0] == 0.0 and output[0] < 0.5:
-                acc += 1
-            if expected[0] == 1.0 and output[0] > 0.5:
-                acc += 1
+                confusion_matrix[0][0] += 1.0
+                number_of_each_class[0] += 1.0
+            elif expected[0] == 0.0 and output[0] >= 0.5:
+                confusion_matrix[0][1] += 1.0
+                number_of_each_class[0] += 1.0
+            elif expected[0] == 1.0 and output[0] > 0.5:
+                confusion_matrix[1][0] += 1.0
+                number_of_each_class[1] += 1.0
+            else:
+                confusion_matrix[1][1] += 1.0
+                number_of_each_class[1] += 1.0
         else:
-            if expected.index(max(expected)) == output.index(max(output)):
-                acc += 1
-    print(float(acc)/float(number_of_instances))
-    return float(acc)/float(number_of_instances)
+            confusion_matrix[expected.index(max(expected))][output.index(max(output))] += 1
+            number_of_each_class[expected.index(max(expected))] += 1
+
+    return (accuracy(confusion_matrix, number_of_instances),
+            precision(confusion_matrix),
+            recall(confusion_matrix))
 
 if __name__ == "__main__":
     dataset = read_dataset('wine')
-    print(cross_validation(dataset, 0.2, 5, [13,5], neurons_type='sigmoid', alpha=0.01, lamb=0.0))
+    for alpha in [x/100.0 for x in range(0,10)]+[x/10.0 for x in range(1,10)]:
+        print(alpha,cross_validation(dataset, 0.1, 5, 1000, [3,5], neurons_type='sigmoid', alpha=alpha, lamb=0.0))
     """mode_parser, mode_argument_parses = parser()
 
     if str(mode_parser.mode) == 'create_net':
