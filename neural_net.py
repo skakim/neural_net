@@ -87,8 +87,8 @@ class NeuralNet(object):
         """
 
         prediction_list, activations = self.predict(nn_input)
-        self.last_prediction = deepcopy(prediction_list)
-        self.last_expected = deepcopy(expected_list)
+        self.last_prediction = prediction_list
+        self.last_expected = expected_list
 
         error = self.calculate_error(prediction_list, expected_list)
 
