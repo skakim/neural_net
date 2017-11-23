@@ -319,13 +319,17 @@ if __name__ == "__main__":
         verify(neural_net)
     elif str(mode_parser.mode) == 'wine':
         dataset = read_dataset('wine')
+        print("Training NN for wine dataset with one hidden layer of 5 neurons, alpha 0.05 and lamb 0.0")
         print_cross_validation(cross_validation(dataset, 0.8, 5, 500, [5], neurons_type='sigmoid', alpha=0.05, lamb=0.0))
     elif str(mode_parser.mode) == 'survival':
         dataset = read_dataset('survival')
-        cross_validation(dataset, 0.8, 5, 500, [5], neurons_type='sigmoid', alpha=0.05, lamb=0.0)
+        print("Training NN for survival dataset with one hidden layer of 5 neurons, alpha 0.05 and lamb 0.0")
+        print_cross_validation(cross_validation(dataset, 0.8, 5, 500, [5], neurons_type='sigmoid', alpha=0.05, lamb=0.0))
     elif str(mode_parser.mode) == 'cancer':
         dataset = read_dataset('cancer')
-        cross_validation(dataset, 0.8, 5, 1000, [10,10,5], neurons_type='sigmoid', alpha=0.05, lamb=0.0)
+        print("Training NN for cancer dataset with 3 hidden layers [10, 10, 5], alpha 0.05 and lamb 0.0")
+        print_cross_validation(cross_validation(dataset, 0.8, 5, 1000, [10,10,5], neurons_type='sigmoid', alpha=0.05, lamb=0.0))
     elif str(mode_parser.mode) == 'contraceptive':
         dataset = read_dataset('contraceptive')
-        cross_validation(dataset, 0.8, 5, 2000, [10,5], neurons_type='sigmoid', alpha=0.05, lamb=0.0)
+        print("Training NN for contraceptive dataset with 3 hidden layers [10, 5], alpha 0.05 and lamb 0.0")
+        print_cross_validation(cross_validation(dataset, 0.8, 5, 2000, [10,5], neurons_type='sigmoid', alpha=0.05, lamb=0.0))
