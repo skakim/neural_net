@@ -182,14 +182,12 @@ def cross_validation(dataset, percentage_train, iterations, iterations_per_itera
         input_size = len(list(train_dataset.keys())[0])
         output_size = len(list(train_dataset.values())[0])
         nn = NeuralNet(input_size, output_size, hidden_layers_sizes, neurons_type, alpha, lamb)
-        return train_NN(nn, train_dataset, iterations_per_iteration)
+        train_NN(nn, train_dataset, iterations_per_iteration)
         accuracy,precision,recall = test_NN(nn, test_dataset)
         accuracies.append(accuracy)
         precisions.append(precision)
         recalls.append(recall)
-    return (mean(accuracies), stdev(accuracies),
-            mean(precisions), stdev(precisions),
-            mean(recalls), stdev(recalls))
+    return mean(accuracies), stdev(accuracies), mean(precisions), stdev(precisions), mean(recalls), stdev(recalls)
 
 def train_NN(NN, train_instances, iterations):
     """
@@ -303,92 +301,31 @@ def test_NN(NN, test_instances):
             precision(confusion_matrix),
             recall(confusion_matrix))
 
+
+def print_cross_validation(return_value):
+
+    mean_accuracies, stdev_accuracies, mean_precisions, stdev_precisions, mean_recalls, stdev_recalls = return_value
+    print("Accuracies mean: ", mean_accuracies, " stdev: ", stdev_accuracies)
+    print("Precisions mean: ", mean_precisions, " stdev: ", stdev_precisions)
+    print("Eecalls mean: ", mean_recalls, " stdev: ", stdev_recalls)
+
+
 if __name__ == "__main__":
-    #with open("alphas.csv","w") as alphas_output:
-    #    dataset = read_dataset('wine')
-    #    print("ALPHA TEST")
-    #    for alpha in [0.01]+[x/10.0 for x in range(1,10)]:
-    #        print(alpha)
-    #        alphas_output.write(str(alpha)+",")
-    #        alphas_output.write(str(cross_validation(dataset, 0.8, 5, 500, [5,5], neurons_type='sigmoid', alpha=alpha, lamb=0.0))+"\n")
-    #with open("lambdas.csv","w") as lambdas_output:
-    #    dataset = read_dataset('wine')
-    #    print("LAMBDA TEST")
-    #    for lambd in [x/10.0 for x in range(0,11)]:
-    #        print(lambd)
-    #        lambdas_output.write(str(lambd)+",")
-    #        lambdas_output.write(str(cross_validation(dataset, 0.8, 5, 1000, [5,5], neurons_type='sigmoid', alpha=0.01, lamb=lambd))+"\n")
-    #with open("hidden_layers.csv","w") as hidden_layers_output:
-    #    dataset = read_dataset('wine')
-    #    print("HIDDEN LAYERS SIZE TEST")
-    #    for size in range(1,6):
-    #        print(size)
-    #        hidden_layers_output.write(str(size)+",")
-    #        hidden_layers_output.write(str(cross_validation(dataset, 0.8, 5, 500, [5]*size, neurons_type='sigmoid', alpha=0.01, lamb=0.0))+"\n")
 
-    with open("survival.csv","w") as survival_output:
-        dataset = read_dataset('survival')
-        print("TRAINING SURVIVAL")
-        errors = cross_validation(dataset, 1.0, 1, 500, [5], neurons_type='sigmoid', alpha=0.05, lamb=0.0)
-        for i in range(len(errors)):
-            survival_output.write(str(i)+","+
-                                  str(errors[i])+"\n")
-
-    with open("wine.csv","w") as wine_output:
-        dataset = read_dataset('wine')
-        print("TRAINING WINE")
-        errors = cross_validation(dataset, 1.0, 1, 500, [5,5], neurons_type='sigmoid', alpha=0.05, lamb=0.0)
-        for i in range(len(errors)):
-            wine_output.write(str(i)+","+
-                                  str(errors[i])+"\n")
-
-    with open("cancer.csv","w") as cancer_output:
-        dataset = read_dataset('cancer')
-        print("TRAINING CANCER")
-        errors = cross_validation(dataset, 1.0, 1, 1000, [10,10,5], neurons_type='sigmoid', alpha=0.05, lamb=0.0)
-        for i in range(len(errors)):
-            cancer_output.write(str(i)+","+
-                                  str(errors[i])+"\n")
-
-    with open("contraceptive.csv","w") as contraceptive_output:
-        dataset = read_dataset('contraceptive')
-        print("TRAINING CONTRACEPTIVE")
-        errors = cross_validation(dataset, 1.0, 1, 2000, [10,5], neurons_type='sigmoid', alpha=0.05, lamb=0.0)
-        for i in range(len(errors)):
-            contraceptive_output.write(str(i)+","+
-                                  str(errors[i])+"\n")
-
-    """mode_parser, mode_argument_parses = parser()
-
-    if str(mode_parser.mode) == 'create_net':
-        print(mode_argument_parses.o)
-        output_directory = str(mode_argument_parses.o[0])
-        print(output_directory)
-        input_size = int(mode_argument_parses.i[0])
-        output_size = int(mode_argument_parses.output_size[0])
-        hidden_layer_sizes = [int(layer_size) for layer_size in mode_argument_parses.l]
-        alpha = float(mode_argument_parses.a[0])
-        gamma = float(mode_argument_parses.g[0])
-        neuron_type = mode_argument_parses.t[0]
-
-        a_neural_net = NeuralNet(input_size, output_size, hidden_layer_sizes, neuron_type, alpha, gamma)
-
-        try:
-            with open(output_directory,'wb') as output:
-                pickle.dump(a_neural_net,output,pickle.HIGHEST_PROTOCOL)
-                print("Neural Network created and saved at %s" % output_directory)
-                exit()
-        except EnvironmentError:
-            print("Can't create file '%s'" % output_directory)
-            exit()
+    mode_parser = parser()
 
     if str(mode_parser.mode) == 'verify':
-        input_nn = str(mode_argument_parses.i[0])
-        try:
-            with open(input_nn,'rb') as input_file:
-                neural_net = pickle.load(input_file)
-                verify(neural_net)
-        except EnvironmentError:
-            print("Can't open file %s" % input_nn)
-            exit()"""
-
+        neural_net = NeuralNet(5,2,[1,2,3,4])
+        verify(neural_net)
+    elif str(mode_parser.mode) == 'wine':
+        dataset = read_dataset('wine')
+        print_cross_validation(cross_validation(dataset, 0.8, 5, 500, [5], neurons_type='sigmoid', alpha=0.05, lamb=0.0))
+    elif str(mode_parser.mode) == 'survival':
+        dataset = read_dataset('survival')
+        cross_validation(dataset, 0.8, 5, 500, [5], neurons_type='sigmoid', alpha=0.05, lamb=0.0)
+    elif str(mode_parser.mode) == 'cancer':
+        dataset = read_dataset('cancer')
+        cross_validation(dataset, 0.8, 5, 1000, [10,10,5], neurons_type='sigmoid', alpha=0.05, lamb=0.0)
+    elif str(mode_parser.mode) == 'contraceptive':
+        dataset = read_dataset('contraceptive')
+        cross_validation(dataset, 0.8, 5, 2000, [10,5], neurons_type='sigmoid', alpha=0.05, lamb=0.0)
