@@ -331,5 +331,5 @@ if __name__ == "__main__":
         print_cross_validation(cross_validation(dataset, 0.8, 5, 1000, [10,10,5], neurons_type='sigmoid', alpha=0.05, lamb=0.0))
     elif str(mode_parser.mode) == 'contraceptive':
         dataset = read_dataset('contraceptive')
-        print("Training NN for contraceptive dataset with 3 hidden layers [10, 5], alpha 0.05 and lamb 0.0")
+        print("Training NN for contraceptive dataset with 2 hidden layers [10, 5], alpha 0.05 and lamb 0.0")
         print_cross_validation(cross_validation(dataset, 0.8, 5, 2000, [10,5], neurons_type='sigmoid', alpha=0.05, lamb=0.0))
